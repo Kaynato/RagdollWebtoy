@@ -1,0 +1,60 @@
+<!DOCTYPE HTML>
+<html lang="en-US">
+<head>
+	<script src= "https://code.jquery.com/jquery-2.2.3.min.js"></script>
+	<script src="~.js"></script>
+	<style>
+		#figure {
+			position: absolute;
+			background: url('fig/f3.png');
+			background-position: 0 0;
+			width: 150px;
+			height: 150px;
+
+			top: auto;
+			right: auto;
+			left: 50%;
+			bottom: auto;
+		}
+
+		.flip {
+			-moz-transform: scaleX(-1);
+	        -o-transform: scaleX(-1);
+	        -webkit-transform: scaleX(-1);
+        	transform: scaleX(-1);
+        	filter: FlipH;
+	        -ms-filter: "FlipH";
+		}
+
+		.rotate {
+		    -ms-transform: rotate(0deg); /* IE 9 */
+		    -webkit-transform: rotate(0deg); /* Chrome, Safari, Opera */
+			transform: rotate(0deg);
+		}
+
+		.debug {
+			font-family: sans-serif;
+		}
+
+	</style>
+</head>
+<body>
+	<div class="debug">
+		<div id="debug1"></div><br>
+		<div id="debug2"></div><br>
+		<div id="debug3"></div><br>
+		<div id="debug4"></div><br>
+		<div id="debug5"></div><br>
+		<div id="debug6"></div><br>
+		<div id="debug7"></div><br>
+		<div id="debug8"></div><br>
+		<div id="debug9"></div><br>
+		<div id="debug10"></div><br>
+		<div id="debug11"></div><br>
+		<div id="debug12"></div>
+	</div>
+
+	<div id="figure" ondragstart="return false;" ondrop="return false;" class="mass"></div>
+
+</body>
+</html>
