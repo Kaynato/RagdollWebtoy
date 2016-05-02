@@ -659,7 +659,7 @@ function f_jump(vx, vy) {
 
 function f_beginfall() {
 	var st = f_state.state;
-	var ws = st == ff_sleep || f_state.down;
+	var ws = (st == ff_sleep || f_state.down) && (st != ff_jumpside || st != ff_jumpup);
 	
 	f_state.state = ff_beginfall;
 	
@@ -774,6 +774,10 @@ function f_mouseDown(mx, my) {
 		f_state.down = 0;
 	}
 	// If we are not standing, we could be
+	// RISE
+	else if (st == ff_rise) {
+		f_setSprite(ff_rise[0]);
+	}
 	// SLEEP
 	else if (st != ff_fall && (st == ff_sleep || f_state.down || st == ff_floor)){
 		f_setSprite(ff_sleep[0]);
@@ -792,7 +796,7 @@ function f_mouseDown(mx, my) {
 		else
 			f_setSprite(ff_rise[0]);
 	}
-	// RISE
+	// ???
 	else {
 		f_setSprite(ff_rise[0]);
 	}
@@ -897,8 +901,9 @@ function f_forceflip(val) {
 
 function f_die() {
 	f_setSprite(ff_sleep);
-	if (f_state.recoveryTime != Infinity)
-		alert('you are a monster.');
+	// if (f_state.recoveryTime != Infinity)
+		// alert('you are a monster.');
+	$("#figure").text("DEAD.");
 	f_state.animate = 0;
 	f_state.compoundDamage=Infinity;
 	f_state.recoveryTime=Infinity;
