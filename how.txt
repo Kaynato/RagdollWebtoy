@@ -1,0 +1,10 @@
+jumping
+	on typical upwards seeks don't reset time counter
+
+	if upper-side seek
+		calculate parabolic path that intersects with mouse, with some variation horizontally
+		launch on parabolic path.
+
+	if upper seek
+		just jump up with the necessary amount of initial speed to intersect with mouse
+		variation tends lower
