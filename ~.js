@@ -13,6 +13,11 @@ function updateTicks(newTicks) {
 	fticks = setInterval("f_tick()", tickSpeed);
 }
 
+function queue(eventName, ticks, msOffset) {
+	clearTimeout(queueEvent);
+	queueEvent = setTimeout(eventName, ticks*tickSpeed+msOffset);
+}
+
 function randInt(max) {
 	return Math.floor(Math.random() * max);
 }
@@ -21,9 +26,13 @@ function chance(num,den) {
 	return (randInt(den) < num);
 }
 
-function queue(eventName, ticks, msOffset) {
-	clearTimeout(queueEvent);
-	queueEvent = setTimeout(eventName, ticks*tickSpeed+msOffset);
+function trigger(value, range) {
+	if (value > range)
+		return 1;
+	else if (value < -range)
+		return -1;
+	else
+		return 0;
 }
 
 function dbTxt(num, txt) {
@@ -68,6 +77,8 @@ document.onmousemove = function(e){
 		var nTop = mouse.y-f_state.mOffY;
 		var nLeft = mouse.x-f_state.mOffX;
 
+		f_forceflip(trigger(mouse.vx, 5));
+
 		$('#figure').css({
 			'top': nTop+'px',
 			'left': nLeft+'px'
@@ -75,6 +86,7 @@ document.onmousemove = function(e){
 		f_state.y = nTop;
 		f_state.x = nLeft;
 		dbTxt(4, 'DRAG @@ '+nLeft+'  '+nTop);
+
 	}
 	dbTxt(1, mouse.x+', '+mouse.y+' ** '+mouse.vx+', '+mouse.vy);
 }
@@ -84,6 +96,7 @@ document.onmousedown = function(e){
 
 	if (inBounds(f,e.pageX,e.pageY)) {
 		dbTxt(4, "ON");
+		clearTimeout(queueEvent);
 		f_mouseDown(e.pageX, e.pageY);
 	}
 	else
@@ -127,6 +140,8 @@ function activePhysics() {
 
 	var totXV = (f_state.xVel+f_state.passiveXV);
 
+	
+
 	dbTxt(7,state_name(f_state.state) + ' : ' + f_state.framenum);
 	dbTxt(9,f_state.x+', '+f_state.y);
 	dbTxt(10,'vel: '+totXV+', '+f_state.passiveYV);
@@ -140,7 +155,8 @@ function detTop(figu) {
 	var H = window.innerHeight;
 	var h = figu.cssNumber("height");
 	var t = f_state.y;
-	var newTop = t+f_state.passiveYV;
+
+	var newTop = t+f_state.passiveYV+f_state.yVel;
 
 	// ON OR UNDER GROUND
 	if(newTop >= (H-h)) {
@@ -158,15 +174,12 @@ function detTop(figu) {
 	}
 	// IN AIR???
 	else {
+		var st = f_state.state;
+		f_dirsign(f_state.xVel+f_state.passiveXV);
 		// GOING DOWN AND NOT FALLING OR BEGINNING TO FALL
 		// Begin the whole falling thing
-		if (f_state.passiveYV>0 && f_state.state != ff_fall && f_state.state != ff_beginfall) {
-			f_state.animate = 1;
-			f_state.framenum = 0;
-			f_state.state = ff_beginfall;
-			updateTicks(100);
-			queue("f_fall()", f_state.state.length, 0);
-		}
+		if (f_state.passiveYV>0 && st!=ff_fall && st!=ff_beginfall)
+			f_beginfall();
 		// Stay floaty!
 		f_state.airborne = 1;
 		f_state.y = newTop;
@@ -174,26 +187,24 @@ function detTop(figu) {
 	}
 }
 
-function f_fall() {
-	f_state.animate = 0;
-	f_state.state = ff_fall;
-	f_setSprite(ff_fall[randInt(ff_fall.length)]);
-	f_state.active = 0;
-	updateTicks(tickSpeed_default);
-}
-
 function detLeft(figu) {
+	// Determine activeXVel
+	f_state.xVel = f_state.xVelbase * f_mouseDistFactor();
+
+	// Determine new x
 	f_state.x += f_state.passiveXV + f_state.xVel;
 
+	// Bounce from L
 	if (f_state.x < 0) {
 		f_state.passiveXV *= f_state.passiveXV >= 0 ? 0.9 : -0.9;
 		if (f_state.passiveXV > 33)
-			f_state.compoundDamage += f_state.passiveXV/15;
+			f_state.compoundDamage += f_state.passiveXV/33;
 	}
 
+	// Bounce from R
 	if ((f_state.x + figu.cssNumber("width")) > window.innerWidth) {
 		if (f_state.passiveXV > 33)
-			f_state.compoundDamage += f_state.passiveXV/15;
+			f_state.compoundDamage += f_state.passiveXV/33;
 		f_state.passiveXV *= f_state.passiveXV >= 0 ? -0.9 : 0.9;
 	}
 
@@ -260,7 +271,7 @@ var ff_fall = [[5,1],[0,2]];
 var ff_floor = [[1,2],[2,2],[2,2],[3,2]];
 
 // Begin to fall
-var ff_beginfall = [[3,3],[4,3],[5,3],[3,2],[2,2],[1,2]];
+var ff_beginfall = [[3,3],[4,3],[5,3],[3,2],[2,2],[1,2],[1,2]];
 
 // Sleep
 var ff_sleep = [[3,2]];
@@ -275,6 +286,8 @@ var f_state = {
 	yVel: 0,
 	xVel: 0,
 
+	xVelbase: 0,
+
 	// Ticks since last looked for mouse
 	alone: 0,
 	dir: 0,
@@ -285,6 +298,7 @@ var f_state = {
 	recoveryTime: 1,
 	compoundDamage: 0,
 	animate: 1,
+	down: 0,
 
 	// Due to "natural causes"
 	passiveXV: 0,
@@ -320,7 +334,7 @@ function f_tick() {
 			f.css('background-position', f_getFrame(f_state));
 		
 		if (!f_state.airborne && f_state.active) {
-			if ((f_state.state == ff_idle && chance(f_state.alone, 100)) 
+			if ((f_state.state == ff_idle && chance(f_state.alone, 80)) 
 					|| f_state.state == ff_walk)
 				f_seekMouse();
 			else
@@ -394,14 +408,29 @@ function f_seekMouse() {
 				f_setWalk(goDir,0);
 		}
 	}
+	// Mouse is above
 	else if (mouse.y < T) {
 		f_seek(0,1);
 		f_state.alone = 0;
 	}
+	// Mouse is touching
 	else {
 		f_changeDir(0);
 		f_state.alone = 0;
+		f_state.compoundDamage -= 0.2;
+		if (f_state.compoundDamage < 0)
+			f_state.compoundDamage = 0;
 	}
+}
+
+function f_mouseDistFactor() {
+	var f = $("#figure");
+	var L = f.cssNumber('left')+f_state.fr_xMargin;
+	var R = L+f.cssNumber('width')-f_state.fr_xMargin;
+	var mouseDist = mouse.x > R ? mouse.x-R : L-mouse.x;
+	var halfScreen = window.innerWidth/2;
+
+	return 1+(mouseDist/halfScreen);
 }
 
 function f_seek(xDir, lookUp) {
@@ -415,11 +444,13 @@ function f_setIdle() {
 	f_stop();
 	f_state.state = ff_idle;
 	f_state.active = 1;
+	f_state.xVelbase = 0;
 }
 
 function f_setSeekUp() {
 	f_stop();
 	f_state.state = ff_seek;
+	f_state.xVelbase = 0;
 	queue("f_setIdle()", ff_seek.length+1, 0);
 }
 
@@ -432,8 +463,9 @@ function f_setSeekHoriz(dir) {
 
 function f_changeDir(dir) {
 	f_state.xVel = 0;
-	
+	f_state.xVelbase = 0;
 	if (f_state.dir > dir) { // Turn left
+		updateTicks(tickSpeed_default/2);
 		f_state.framenum = 0;
 		f_state.dir--;
 
@@ -449,6 +481,7 @@ function f_changeDir(dir) {
 		}
 	}
 	else if (f_state.dir < dir) { // Turn right
+		updateTicks(tickSpeed_default/2);
 		f_state.framenum = 0;
 		f_state.dir++;
 
@@ -466,6 +499,7 @@ function f_changeDir(dir) {
 
 	// No turning necessary
 	else {
+		updateTicks(tickSpeed_default);
 		dbTxt(5,dir != 0 ?"DONE TURNING":"RETURNED");
 		if (dir != 0)
 			f_setWalk(dir,1);
@@ -478,10 +512,13 @@ function f_changeDir(dir) {
 function f_setWalk(dir, init) {
 	if (f_state.dir != dir)
 		return f_changeDir(dir);
+	updateTicks(tickSpeed_default);
 	if (init)
 		f_state.framenum = 0;
 	f_state.state = ff_walk;
-	f_state.xVel = dir * ((1.0*f_state.alone)/40);
+
+	f_state.xVelbase = dir * ((1.0*f_state.alone)/40);
+
 }
 
 function f_sleep() {
@@ -493,27 +530,85 @@ function f_sleep() {
 	}
 }
 
+function f_beginfall() {
+	var st = f_state.state;
+	var ws = st == ff_sleep || f_state.down;
+	
+	f_state.state = ff_beginfall;
+	
+
+	f_state.framenum = ws ? 3 : 0;
+	
+
+
+	f_state.animate = 1;
+	updateTicks(100);
+	queue("f_fall()", f_state.state.length-f_state.framenum, 0);
+}
+
+function f_fall() {
+	f_state.state = ff_fall;
+	f_state.framenum = randInt(ff_fall.length);
+	f_setSprite(ff_fall[f_state.framenum]);
+	f_state.animate = 0;
+	f_state.active = 0;
+	updateTicks(tickSpeed_default);
+}
+
+// Only called when state is fall or beginfall
 function f_hitFloor() {
-	f_state.framenum = 0;
-	f_state.state = ff_floor;
+	var beginfall = f_state.state == ff_beginfall;
 	f_state.active = 0;
 	updateTicks(tickSpeed_default);
 
-	if (f_state.recoveryTime == Infinity)
-		f_setSprite(ff_sleep);
-	else {
-		f_state.recoveryTime=(f_state.passiveYV/4)+(randInt(2)/2)+(f_state.compoundDamage/2);
+	// Didn't start falling enough
+	if (beginfall && f_state.framenum < 3) {
+		// Recover
+		f_state.state = ff_rise;
 
-		if (f_state.passiveYV < 19)
-			f_state.recoveryTime = 0.5;
+		// Determine position of recovery
+		switch (f_state.framenum) {
+			case 2:
+				f_state.framenum = 0;
+				break;
+			case 1:
+				f_state.framenum = 3;
+				break;
+			case 0:
+				f_state.framenum = 5;
+				break;
+		}
 
-		if(f_state.passiveYV > 33)
-			f_state.compoundDamage += (f_state.passiveYV/15);
-		if (f_state.compoundDamage > 50)
-			f_die();
+		// Wait for animation to finish
+		queue("f_setIdle()", f_state.state.length-f_state.framenum, 0);
 	}
+	// Completely falling or at least going to collapse
+	else {
+		f_state.state = ff_floor;
 
-	queue("f_sleep()",f_state.state.length,-2*tickSpeed/3);
+		if (beginfall) {
+			f_state.framenum = 6 - f_state.framenum;
+		}
+		else
+			f_state.framenum = 0;
+		
+		// DEADDDDDDDDDd
+		if (f_state.recoveryTime == Infinity)
+			f_setSprite(ff_sleep);
+		// Not dead - calculate recovery time
+		else {
+			f_state.recoveryTime=(randInt(2)+f_state.passiveYV/2+f_state.compoundDamage)/2;
+	
+			// if (f_state.passiveYV < 19)
+			// f_state.recoveryTime = 0.5;
+	
+			if(f_state.passiveYV > 33)
+				f_state.compoundDamage += (f_state.passiveYV/15);
+			if (f_state.compoundDamage > 50)
+				f_die();
+		}
+		queue("f_sleep()",f_state.state.length-f_state.framenum,-2*tickSpeed/3);
+	}
 }
 
 function f_rise() {
@@ -542,12 +637,49 @@ function f_resetAnim() {
 function f_mouseDown(mx, my) {
 	f_state.dragged = 1;
 
-	f_state.state = f_state.recoveryTime != Infinity ?ff_dragged:ff_sleep;
-
 	var f = $("#figure");
+	var st = f_state.state;
 
-	// Set to closed-eye face
-	f_setSprite(f_state.recoveryTime != Infinity ?ff_dragged:ff_sleep, 0);
+	// If we are standing, set to closed-eye face
+	if (f_isStanding()) {
+		f_setSprite(ff_dragged);
+		f_state.down = 0;
+	}
+	// If we are not standing, we could be
+	// SLEEP
+	else if (st != ff_fall && (st == ff_sleep || f_state.down || st == ff_floor)){
+		dbTxt(14,"dragtype down");
+		f_setSprite(ff_sleep[0]);
+		f_state.down = 1;
+	}
+	// FALL
+	else if (st == ff_fall) {
+		dbTxt(14,"dragtype fall");
+		f_setSprite(ff_fall[f_state.framenum]);
+	}
+	// BEGINFALL
+	else if (st == ff_beginfall) {
+		dbTxt(14,"dragtype beginfall");
+		if (f_state.framenum > 4)
+			f_setSprite(ff_beginfall[5]);
+		else if (f_state.framenum > 2)
+			f_setSprite(ff_sleep[0]);
+		else
+			f_setSprite(ff_rise[0]);
+	}
+	// RISE
+	else {
+		f_setSprite(ff_rise[0]);
+	}
+
+
+
+
+	// Set appropriate state if not already falling
+	if (st != ff_fall)
+		f_state.state = f_state.recoveryTime != Infinity ?ff_dragged:ff_sleep;
+	else
+		f_state.state = ff_fall;
 
 	// Set offsets
 	f_state.mOffX = mx - f.cssNumber('left');
@@ -573,6 +705,13 @@ function f_setSprite(sprite) {
 	var x = sprite[0] * -f_state.fr_width+'px';
 	var y = sprite[1] * -f_state.fr_height+'px';
 	$("#figure").css("background-position",x+' '+y);
+}
+
+function f_isStanding() {
+	var st = f_state.state;
+	var is = st == ff_idle || st == ff_seek || st == ff_turn || st == ff_tocen;
+	is |= st == ff_tosid || st == ff_walk || st == ff_dragged || st == ff_rise;
+	return is;
 }
 
 function state_name(state) {
@@ -604,9 +743,19 @@ function state_name(state) {
 	}
 }
 
+function f_dirsign(val) {
+	f_state.dir = Math.sign(val);
+}
 
-
-
+function f_forceflip(val) {
+	dbTxt(13, val);
+	if (val != 0) {
+		if (val == 1)
+			$("#figure").removeClass("flip");
+		else if (val == -1)
+			$("#figure").addClass("flip");
+	}
+}
 
 
 
