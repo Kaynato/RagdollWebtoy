@@ -58,3 +58,14 @@ next to do:
 
 		at alone_0 use ff_idleh instead of ff_idle
 		also yes REQ SPRITE
+
+
+
+
+
+
+BUGS
+
+	Drag sprite when idle is wrong
+
+	Falling cycle is incorrect
