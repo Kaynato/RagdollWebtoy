@@ -8,25 +8,37 @@ var queueEvent = null;
 var gravi = setInterval("activePhysics()", 20);
 var fticks = setInterval("f_tick()", tickSpeed);
 
+var mouse = {
+	x: window.innerWidth/2,
+	y: window.innerHeight/2,
+	vx: 0.0,
+	vy: 0.0
+}
+
+// Update tick speed.
 function updateTicks(newTicks) {
 	tickSpeed = newTicks;
 	clearInterval(fticks);
 	fticks = setInterval("f_tick()", tickSpeed);
 }
 
+// Queue event after some time.
 function queue(eventName, ticks, msOffset) {
 	clearTimeout(queueEvent);
 	queueEvent = setTimeout(eventName, ticks*tickSpeed+msOffset);
 }
 
+// Rand int from 0 ... max
 function randInt(max) {
 	return Math.floor(Math.random() * max);
 }
 
+// num/dem chance to be 1
 function chance(num,den) {
 	return (randInt(den) < num);
 }
 
+// 1 if above range, -1 if below -range, 0 otherwise.
 function trigger(value, range) {
 	if (value > range)
 		return 1;
@@ -36,20 +48,15 @@ function trigger(value, range) {
 		return 0;
 }
 
+// Debug text
 function dbTxt(num, txt) {
 	if (DEBUG) $('#debug'+num).text(txt);
 }
 
+// css property as number
 jQuery.fn.cssNumber = function(prop){
 	var v = parseInt(this.css(prop), 10);
 	return isNaN(v) ? 0 : v;
-}
-
-var mouse = {
-	x: window.innerWidth/2,
-	y: window.innerHeight/2,
-	vx: 0.0,
-	vy: 0.0
 }
 
 //////////////
@@ -101,10 +108,10 @@ document.onmousemove = function(e){
 			'top': nTop+'px',
 			'left': nLeft+'px'
 		});
+
 		f_state.y = nTop;
 		f_state.x = nLeft;
 		dbTxt(4, 'DRAG @@ '+nLeft+'  '+nTop);
-
 	}
 	dbTxt(1, mouse.x+', '+mouse.y+' ** '+mouse.vx+', '+mouse.vy);
 }
@@ -158,7 +165,6 @@ function activePhysics() {
 
 	var totXV = (f_state.xVel+f_state.passiveXV);
 
-
 	// Also check mouse collision
 	if (inBounds($('#figure'),mouse.x,mouse.y)) {
 		f_state.alone -= f_state.friendliness;
@@ -166,12 +172,10 @@ function activePhysics() {
 			f_state.alone = 0;
 	}
 	
-
 	dbTxt(7,state_name(f_state.state) + ' : ' + f_state.framenum);
-	dbTxt(9,f_state.x+', '+f_state.y);
+	dbTxt(9,'position: '+f_state.x+', '+f_state.y);
 	dbTxt(10,'vel: '+totXV+', '+f_state.yVel);
-	dbTxt(11,(f_state.active?'ACTIVE':'INACTIVE')+'  '+(f_state.animate?'ANIMATE':'STILL')
-		+' ticks: '+tickSpeed);
+	dbTxt(11,(f_state.active?'ACTIVE':'INACTIVE')+'  '+(f_state.animate?'ANIMATE':'STILL')+' ticks: '+tickSpeed);
 	dbTxt(12,f_state.compoundDamage+' >> '+f_state.recoveryTime);
 	dbTxt(15,f_state.airborne?'ON AIR':'ON GROUND');
 }
@@ -220,14 +224,14 @@ function detLeft(figu) {
 	// Determine new x
 	f_state.x += f_state.passiveXV + f_state.xVel;
 
-	// Bounce from L
+	// Bounce against L
 	if (f_state.x < 0) {
-		f_state.passiveXV *= f_state.passiveXV >= 0 ? 0.9 : -0.9;
-		if (f_state.passiveXV > 33)
+		if (f_state.passiveXV < 33)
 			f_state.compoundDamage += f_state.passiveXV/33;
+		f_state.passiveXV *= f_state.passiveXV >= 0 ? 0.9 : -0.9;
 	}
 
-	// Bounce from R
+	// Bounce against R
 	if ((f_state.x + figu.cssNumber("width")) > window.innerWidth) {
 		if (f_state.passiveXV > 33)
 			f_state.compoundDamage += f_state.passiveXV/33;
@@ -372,8 +376,7 @@ function f_tick() {
 			f.css('background-position', f_getFrame(f_state));
 		
 		if (!f_state.airborne && f_state.active) {
-			if ((f_state.state == ff_idle && chance(f_state.alone, 80)) 
-					|| f_state.state == ff_walk)
+			if ((f_state.state == ff_idle && chance(f_state.alone, 80)) || f_state.state == ff_walk)
 				f_seekMouse();
 			else
 				f_state.alone++;
@@ -458,11 +461,9 @@ function f_seekMouse() {
 function f_mouseDistFactor() {
 	var f = $("#figure");
 	var L = f.cssNumber('left')+f_state.fr_xMargin;
-	var R = L+f.cssNumber('width')-f_state.fr_xMargin;
+	var R = L+f.cssNumber('width')-(2*f_state.fr_xMargin);
 	var mouseDist = mouse.x > R ? mouse.x-R : L-mouse.x;
-	var halfScreen = window.innerWidth/2;
-
-	return 1+(mouseDist/halfScreen);
+	return 1+(2*mouseDist/window.innerWidth);
 }
 
 // Seek the mouse. Transition from idle into an active state.
@@ -566,23 +567,19 @@ function f_setWalk(dir, init) {
 	if (init)
 		f_state.framenum = 0;
 	f_state.state = ff_walk;
-
 	f_state.xVelbase = dir * ((1.0*f_state.alone)/40);
-
 }
 
 function f_sleep() {
 	f_state.state = ff_sleep;
 	f_state.active = 0;
 	f_state.animate = 0;
-	if (f_state.recoveryTime != Infinity) {
+	if (f_state.recoveryTime != Infinity)
 		queue("f_rise()", 1+f_state.recoveryTime, 0);
-	}
 }
 
 // Prepare a jump
 function f_prepJump(dir, xdiff, mousedir) {
-	
 	f_state.dir = mousedir;
 	f_state.xVel = 0;
 	f_state.xVelbase = 0;
@@ -602,8 +599,6 @@ function f_prepJump(dir, xdiff, mousedir) {
 	if (jump_vy > f_state.maxAllowV)
 		jump_vy *= 0.8 - (Math.random() * 0.4);
 
-	
-
 	// Straight up
 	if (Math.abs(xdiff) < 0.5) {
 		// Safe or desperate
@@ -622,7 +617,6 @@ function f_prepJump(dir, xdiff, mousedir) {
 		// Set direction
 		f_state.dir = dir;
 		
-
 		// Time for calculations
 		var timetofall = -jump_vy / gravity;
 		dbTxt(14,"time to fall: "+timetofall);
@@ -660,11 +654,8 @@ function f_jump(vx, vy) {
 function f_beginfall() {
 	var st = f_state.state;
 	var ws = (st == ff_sleep || f_state.down) && (st != ff_jumpside || st != ff_jumpup);
-	
-	f_state.state = ff_beginfall;
-	
+	f_state.state = ff_beginfall;	
 	f_state.framenum = ws ? 3 : 0;
-
 	f_state.animate = 1;
 	updateTicks(100);
 	queue("f_fall()", f_state.state.length-f_state.framenum, 0);
@@ -714,9 +705,8 @@ function f_hitFloor() {
 	else {
 		f_state.state = ff_floor;
 
-		if (beginfall) {
+		if (beginfall)
 			f_state.framenum = 6 - f_state.framenum;
-		}
 		else
 			f_state.framenum = 0;
 		
@@ -726,9 +716,6 @@ function f_hitFloor() {
 		// Not dead - calculate recovery time
 		else {
 			f_state.recoveryTime=(randInt(2)+f_state.yVel/2+f_state.compoundDamage)/2;
-	
-			// if (f_state.yVel < 19)
-			// f_state.recoveryTime = 0.5;
 	
 			if(f_state.yVel > 33)
 				f_state.compoundDamage += (f_state.yVel/15);
@@ -746,9 +733,6 @@ function f_rise() {
 	queue("f_setIdle()", f_state.state.length, 0);
 }
 
-
-
-
 function f_stop() {
 	f_resetAnim();
 	f_state.dir = 0;
@@ -758,9 +742,6 @@ function f_resetAnim() {
 	f_state.framenum = 0;
 	f_state.xVel = 0;
 }
-
-
-
 
 function f_mouseDown(mx, my) {
 	f_state.dragged = 1;
@@ -775,9 +756,8 @@ function f_mouseDown(mx, my) {
 	}
 	// If we are not standing, we could be
 	// RISE
-	else if (st == ff_rise) {
+	else if (st == ff_rise)
 		f_setSprite(ff_rise[0]);
-	}
 	// SLEEP
 	else if (st != ff_fall && (st == ff_sleep || f_state.down || st == ff_floor)){
 		f_setSprite(ff_sleep[0]);
@@ -797,12 +777,8 @@ function f_mouseDown(mx, my) {
 			f_setSprite(ff_rise[0]);
 	}
 	// ???
-	else {
+	else
 		f_setSprite(ff_rise[0]);
-	}
-
-
-
 
 	// Set appropriate state if not already falling
 	if (st != ff_fall)
@@ -823,8 +799,8 @@ function f_mouseDown(mx, my) {
 
 function f_mouseUp() {
 	if (f_state.dragged) {
-		f_state.passiveXV = mouse.vx*0.99;
-		f_state.yVel = mouse.vy*1.0;
+		f_state.passiveXV = mouse.vx*0.8;
+		f_state.yVel = mouse.vy*0.8;
 	}
 	f_state.dragged = 0;
 	$("#figure").addClass('mass');
@@ -846,39 +822,25 @@ function f_isStanding() {
 }
 
 function state_name(state) {
+	if (f_state.recoveryTime === Infinity)
+		return "DEAD";
 	switch (state) {
-		case ff_idle:
-			return "IDLE";
-		case ff_seek:
-			return "SEEK UPWARDS";
-		case ff_turn:
-			return "SEEK SIDEWAYS";
-		case ff_walk:
-			return "WALK";
-		case ff_fall:
-			return "FALLING";
-		case ff_floor:
-			return "HITTING THE FLOOR";
-		case ff_sleep:
-			return "SLEEP";
-		case ff_tosid:
-			return "TURNING TO SIDE";
-		case ff_tocen:
-			return "TURNING TO CENTER";
-		case ff_rise:
-			return "RISING";
-		case ff_dragged:
-			return "DRAGGED";
-		case ff_beginfall:
-			return "BEGIN FALL";
-		case ff_prepjumpside:
-			return "PREPARE SIDE JUMP";
-		case ff_jumpside:
-			return "SIDE JUMP";
-		case ff_prepjumpup:
-			return "PREPARE VERTICAL JUMP";
-		case ff_jumpup:
-			return "VERTICAL JUMP";
+		case ff_idle:			return "IDLE";
+		case ff_seek:			return "SEEK UPWARDS";
+		case ff_turn:			return "SEEK SIDEWAYS";
+		case ff_walk:			return "WALK";
+		case ff_fall:			return "FALLING";
+		case ff_floor:			return "HITTING THE FLOOR";
+		case ff_sleep:			return "SLEEP";
+		case ff_tosid:			return "TURNING TO SIDE";
+		case ff_tocen:			return "TURNING TO CENTER";
+		case ff_rise:			return "RISING";
+		case ff_dragged:		return "DRAGGED";
+		case ff_beginfall:		return "BEGIN FALL";
+		case ff_prepjumpside:	return "PREPARE SIDE JUMP";
+		case ff_jumpside:		return "SIDE JUMP";
+		case ff_prepjumpup:		return "PREPARE VERTICAL JUMP";
+		case ff_jumpup:			return "VERTICAL JUMP";
 	}
 }
 
@@ -887,12 +849,10 @@ function f_dirsign(val) {
 }
 
 function f_forceflip(val) {
-	if (val != 0) {
-		if (val == 1)
-			$("#figure").removeClass("flip");
-		else if (val == -1)
-			$("#figure").addClass("flip");
-	}
+	if (val == 1)
+		$("#figure").removeClass("flip");
+	else if (val == -1)
+		$("#figure").addClass("flip");
 }
 
 
