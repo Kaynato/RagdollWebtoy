@@ -27,10 +27,10 @@ function vec2(initx, inity) {
 	this.mul = (X,Y) => {this.x *= X; this.y *= Y;}
 	this.set = (X,Y) => {this.x  = X; this.y  = Y;}
 
-	this.addV = (V) => this.add(V.x,V.y);
-	this.subV = (V) => this.sub(V.x,V.y);
-	this.mulV = (V) => this.mul(V.x,V.y);
-	this.setV = (V) => this.set(V.x,V.y);
+	this.addV = (V) => this.add(V.x, V.y);
+	this.subV = (V) => this.sub(V.x, V.y);
+	this.mulV = (V) => this.mul(V.x, V.y);
+	this.setV = (V) => this.set(V.x, V.y);
 
 	this.toString = () => '('+this.x+', '+this.y+')';
 	this.toPx = () => this.x+'px '+this.y+'px';

@@ -42,7 +42,6 @@ next to do:
 				else
 					idle
 
-
 	limit on absolute jumpspeed or whatever
 
 		use an function asymptotic(insert, limit, factor)
@@ -66,6 +65,4 @@ next to do:
 
 BUGS
 
-	Drag sprite when idle is wrong
-
-	Falling cycle is incorrect
+	instant recovery from sleep by clipping into ground
