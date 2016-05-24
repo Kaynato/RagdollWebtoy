@@ -14,42 +14,42 @@ var mouse = {
 }
 
 var Vector = {
-	sum:  (V,W) => new vec2(V.x + W.x, V.y + W.y),
-	diff: (V,W) => new vec2(V.x - W.x, V.y - W.y)
+	sum:  function (V,W) {return new vec2(V.x + W.x, V.y + W.y)},
+	diff: function (V,W) {return new vec2(V.x - W.x, V.y - W.y)}
 }
 
 function vec2(initx, inity) {
 	this.x = initx;
 	this.y = inity;
 
-	this.add = (X,Y) => {this.x += X; this.y += Y;}
-	this.sub = (X,Y) => {this.x -= X; this.y -= Y;}
-	this.mul = (X,Y) => {this.x *= X; this.y *= Y;}
-	this.set = (X,Y) => {this.x  = X; this.y  = Y;}
+	this.add = function(X,Y)  {this.x += X; this.y += Y;}
+	this.sub = function(X,Y)  {this.x -= X; this.y -= Y;}
+	this.mul = function(X,Y)  {this.x *= X; this.y *= Y;}
+	this.set = function(X,Y)  {this.x  = X; this.y  = Y;}
 
-	this.addV = (V) => this.add(V.x, V.y);
-	this.subV = (V) => this.sub(V.x, V.y);
-	this.mulV = (V) => this.mul(V.x, V.y);
-	this.setV = (V) => this.set(V.x, V.y);
+	this.addV = function(V) { this.add(V.x, V.y) };
+	this.subV = function(V) { this.sub(V.x, V.y) };
+	this.mulV = function(V) { this.mul(V.x, V.y) };
+	this.setV = function(V) { this.set(V.x, V.y) };
 
-	this.toString = () => '('+this.x+', '+this.y+')';
-	this.toPx = () => this.x+'px '+this.y+'px';
+	this.toString = function()  {return '('+this.x+', '+this.y+')'};
+	this.toPx = function()  {return this.x+'px '+this.y+'px'};
 }
 
 // CSS Div
 function cssdiv(selector) {
 	this.e = $(selector);
-	this.getLeft = () => this.e.cssNumber('left');
-	this.getTop = () => this.e.cssNumber('top');
+	this.getLeft = function () { this.e.cssNumber('left')};
+	this.getTop = function () { this.e.cssNumber('top')};
 
-	this.getWidth = () => this.e.cssNumber('width');
-	this.getHeight = () => this.e.cssNumber('height');
+	this.getWidth = function () { this.e.cssNumber('width')};
+	this.getHeight = function () { this.e.cssNumber('height')};
 
-	this.getRight = () => this.getLeft() + this.getWidth();
-	this.getBottom = () => this.getTop() + this.getHeight();
+	this.getRight = function () { this.getLeft() + this.getWidth()};
+	this.getBottom = function () { this.getTop() + this.getHeight()};
 	
-	this.setLeft = (l) => this.e.css('left', L+'px');
-	this.setTop = (T) => this.e.css('top', T+'px');
+	this.setLeft = function (l){ this.e.css('left', L+'px') };
+	this.setTop = function (T){ this.e.css('top', T+'px') };
 }
 
 // Update tick speed.
@@ -128,71 +128,6 @@ function getFrame(o) {
 	return x+' '+y;
 }
 
-//////////////
-//////////////
-//////////////
-// DOCUMENT //
-//////////////
-//////////////
-//////////////
-
-$(document).ready(function() {
-	figur.initialize();
-	figur.beginfall();
-
-	$(this).keydown(function(event) {
-		var ch = event.which;
-		if (ch!=116 && ch!=18 && ch!=8 && ch!=17) {
-			event.preventDefault();
-
-			// If press D
-			if (event.which == 68) {
-				if (DEBUG) {
-					DEBUG = 0;
-					$('.debug *').text('');
-				}
-				else
-					DEBUG = 1;
-			}
-		}
-	});
-});
-
-document.onmousemove = function(e){
-	mouse.v.set(e.pageX-mouse.r.x, e.pageY-mouse.r.y);
-	mouse.r.set(e.pageX, e.pageY);
-
-	// Drag if dragging
-	if (figur.dragged) {
-		var newpos = Vector.diff(mouse.r, figur.mOff);		
-
-		figur.forceflip(trigger(mouse.v.x, 5));
-
-		$('#figure').css({
-			'top': newpos.y+'px',
-			'left': newpos.x+'px'
-		});
-		figur.r.setV(newpos);
-		dbTxt(4, 'DRAG @@ '+newpos.toString());
-	}
-	dbTxt(1, mouse.r.toString()+' ** '+mouse.v.toString());
-}
-
-document.onmousedown = function(e){
-	if (inBounds(figur,e.pageX,e.pageY)) {
-		dbTxt(4, "ON");
-		clearTimeout(queueEvent);
-		figur.mouseDown(e.pageX, e.pageY);
-	}
-	else
-		dbTxt(4, "OFF");
-}
-
-document.onmouseup = function(e){
-	dbTxt(4, "OFF");
-	figur.mouseUp();
-}
-
 /////////////
 /////////////
 /////////////
@@ -211,7 +146,7 @@ function activePhysics() {
 		var newTop = detTop(massed);
 		var newLeft = detLeft(massed);
 
-		massed.css("top",newTop+'px');
+		massed.css("top",newTop - $(document).scrollTop() + 'px');
 		massed.css("left",newLeft+'px');
 	}
 
@@ -229,35 +164,28 @@ function activePhysics() {
 		figur.alone -= decf(figur.alone, figur.friendliness);
 	
 	dbTxt(7,figur.state_name(figur.state) + ' : ' + figur.framenum);
-	dbTxt(9,'position: '+figur.r.toString());
+	dbTxt(9,'position: '+figur.r.toString() + '\n' + figur.elem.getLeft() + ' ' + figur.elem.getTop());
 	dbTxt(10,'vel: '+totXV+', '+figur.v.y);
 	dbTxt(11,(figur.active?'ACTIVE':'INACTIVE')+'  '+(figur.animate?'ANIMATE':'STILL')+' ticks: '+tickSpeed);
 	dbTxt(12,figur.hurt+' >> '+figur.recoveryTime);
+	dbTxt(13,$(document).scrollTop());
 	dbTxt(15,figur.airborne?'ON AIR':'ON GROUND');
 }
 
 // Should extend to include platforms
 function detTop(figu) {
-	var H = window.innerHeight;
+
+	// Determines floor
+	var H = ($(document).scrollTop()) + window.innerHeight;
+
 	var h = H-figu.cssNumber("height");
 	var t = figur.r.y;
 
 	var newTop = t+figur.v.y;
 
 	// ON OR UNDER GROUND
-	if(newTop >= h) {
-		// Hit the ground...
-		if (figur.state == figur.ff.fall || figur.state == figur.ff.beginfall)
-			figur.hitFloor();
-		// Was dragged there?
-		else if (figur.state == figur.ff.dragged)
-			figur.setIdle();
-		figur.animate = 1;
-		figur.airborne = 0;
-		figur.v.y = 0;
-		figur.r.y = h;
-		return h;
-	}
+	if(newTop >= h)
+		return figur.ground(h);
 	// IN AIR???
 	else {
 		var st = figur.state;
@@ -298,17 +226,11 @@ function detLeft(figu) {
 
 function inBounds(o, x, y) {
 	var d = " < ";
-	dbTxt(2,o.getLB()+d+x+d+o.getRB());
-	dbTxt(3,o.getTB()+d+y+d+o.getBB());
+	dbTxt(2,o.getLB()+ d +x+ d +o.getRB());
+	dbTxt(3,o.getTB()+ d +y+ d +o.getBB());
 	return between(x,o.getLB(),o.getRB()) && between(y,o.getTB(),o.getBB());
 }
 
-////////////////////////////
-//						  //
-//						  //
-//						  //
-//						  //
-//						  //
 ////////////////////////////
 ////////////////////////////
 ////////////////////////////
@@ -316,17 +238,15 @@ function inBounds(o, x, y) {
 ////////////////////////////
 ////////////////////////////
 ////////////////////////////
-//						  //
-//						  //
-//						  //
-//						  //
-//						  //
-////////////////////////////
 
 var figur = {
 	elem: new cssdiv("#figure"),
 
 	initialize: function() {
+		if (window.fstack == undefined)
+			window.fstack = [this];
+		else
+			window.fstack.push(this);
 		this.elem = new cssdiv("#figure");
 		this.elem.setTop(0);
 		this.r = new vec2(this.elem.getLeft(), this.elem.getTop());
@@ -376,27 +296,27 @@ var figur = {
 	fr_topMargin: 0,
 
 	ff: {
-		idle: [[0,0],[1,0],[2,0],[3,0]],
-		seek: [[3,1],[3,1],[4,1],[4,1],[4,1],[4,1],[3,1],[3,1],[3,1]],
-		turn: [[3,0],[3,0],[3,0],[3,0],[4,0],[4,0],[4,0],[4,0],[4,0]],
-		tocen: [[5,0],[4,0],[3,0]],
-		tosid: [[3,0],[4,0],[5,0]],
-		walk: [[5,0],[0,1],[1,1],[2,1]],
-		dragged: [4,1],
-		fall: [[5,1],[0,2]],
-		floor: [[1,2],[2,2],[2,2],[3,2]],
-		beginfall: [[3,3],[4,3],[5,3],[3,2],[2,2],[1,2],[1,2]],
-		sleep: [[3,2]],
-		rise: [[4,2],[4,2],[5,2],[5,2],[5,2],[5,2]],
-		prepjumpup: [[0,3]],
-		jumpup: [[1,3]],
-		prepjumpside: [[2,3]],
-		jumpside: [[3,3]]
+		idle: 			[[0,0],[1,0],[2,0],[3,0]],
+		seek: 			[[3,1],[3,1],[4,1],[4,1],[4,1],[4,1],[3,1],[3,1],[3,1]],
+		turn: 			[[3,0],[3,0],[3,0],[3,0],[4,0],[4,0],[4,0],[4,0],[4,0]],
+		tocen: 			[[5,0],[4,0],[3,0]],
+		tosid: 			[[3,0],[4,0],[5,0]],
+		walk: 			[[5,0],[0,1],[1,1],[2,1]],
+		dragged: 		[4,1],
+		fall: 			[[5,1],[0,2]],
+		floor: 			[[1,2],[2,2],[3,2],[3,2]],
+		beginfall: 		[[3,3],[4,3],[5,3],[3,2],[3,2],[1,2],[1,2]],
+		sleep: 			[[3,2]],
+		rise: 			[[4,2],[4,2],[5,2],[5,2],[5,2],[5,2]],
+		prepjumpup: 	[[0,3]],
+		jumpup: 		[[1,3]],
+		prepjumpside: 	[[2,3]],
+		jumpside: 		[[3,3]]
 	},
 
 	state: 0,
 
-	is: (st) => figur.state === st,
+	is: function(st) {return figur.state === st},
 
 	tick: function() {
 		if (!this.dragged) {
@@ -418,8 +338,8 @@ var figur = {
 
 	getLB: function() {return this.elem.getLeft()  +this.fr_xMargin},
 	getRB: function() {return this.elem.getRight() -this.fr_xMargin},
-	getTB: function() {return this.elem.getTop()   +this.fr_topMargin},
-	getBB: function() {return this.elem.getBottom()},
+	getTB: function() {return this.elem.getTop()   +this.fr_topMargin + $(document).scrollTop()},
+	getBB: function() {return this.elem.getBottom()  				  + $(document).scrollTop()},
 
 	seekMouse: function() {
 		// Important sides
@@ -648,9 +568,17 @@ var figur = {
 		var st = this.state;
 		var ws = (this.is(this.ff.sleep) || this.down) && (st != this.ff.jumpside || st != this.ff.jumpup);
 		this.state = this.ff.beginfall;	
+
 		this.framenum = ws ? 3 : 0;
+
+		// Active mvt becomes passive
+		this.v.x += this.xVelbase;
+		this.xVelbase = 0;
+
+		// if (DEBUG) alert("Starting fall from " + (ws ?'DOWN':'STAND'));
+
 		this.animate = 1;
-		updateTicks(100);
+		updateTicks(2*tickSpeed_default/3);
 		queue("figur.fall()", this.state.length-this.framenum, 0);
 	},
 
@@ -734,7 +662,7 @@ var figur = {
 		// If we are not standing, we could be
 		// RISE
 		else if (st == this.ff.rise)
-			this.setSprite(this.ff.rise[0]);
+			this.setSprite(this.ff.rise[2]);
 		// SLEEP
 		else if (st != this.ff.fall && (st == this.ff.sleep || this.down || st == this.ff.floor)){
 			this.setSprite(this.ff.sleep[0]);
@@ -751,11 +679,11 @@ var figur = {
 			else if (this.framenum > 2)
 				this.setSprite(this.ff.sleep[0]);
 			else
-				this.setSprite(this.ff.rise[0]);
+				this.setSprite(this.ff.rise[2]);
 		}
 		// ???
 		else
-			this.setSprite(this.ff.rise[0]);
+			this.setSprite(this.ff.rise[2]);
 
 		// Set appropriate state if not already falling
 		if (st != this.ff.fall)
@@ -831,12 +759,114 @@ var figur = {
 
 	die: function() {
 		this.setSprite(this.ff.sleep);
-		// if (this.recoveryTime != Infinity)
-			// alert('you are a monster.');
+		if (this.recoveryTime != Infinity)
+			alert('you are a monster.');
 		$("#figure").text("DEAD.");
 		this.animate = 0;
 		this.hurt=Infinity;
 		this.recoveryTime=Infinity;
+	},
+
+
+
+
+	ground: function(h) {
+		var st = this.state;
+		// Hit the ground...
+		if (st == this.ff.fall || st == this.ff.beginfall || st == this.ff.jumpside || st == this.ff.jumpup)
+			this.hitFloor();
+		// Was dragged there?
+		else if (st == this.ff.dragged)
+			this.setIdle();
+		this.animate = 1;
+		this.airborne = 0;
+		this.v.y = 0;
+		this.r.y = h;
+		return h;
 	}
 
+	hidden: false,
+	hidetoggle: function() {
+		this.hidden = !this.hidden;
+		this.E.e.css('visibility',this.hidden?'hidden':'visible');
+	}
+
+}
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////// DOCUMENT //////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+$(document).ready(function() {
+	figur.initialize();
+	figur.beginfall();
+
+	$(this).keydown(function(event) {
+		var ch = event.which;
+		if ($('#testbed').length)
+			D=1;
+		// if (ch < 112 && ch > 123 && ch < 16 && ch > 18 && ch!=8 && ch < 33 && ch > 40) {
+		if (ch == 68) {
+			event.preventDefault();
+
+			// If press D
+			if ($('.debug *').length) {
+				if (event.which == 68) {
+					if (DEBUG) {
+						DEBUG = 0;
+						$('.debug *').text('');
+					}
+					else
+						DEBUG = 1;
+				}
+			}
+		}
+	});
+});
+
+document.onmousemove = function(e){
+	mouse.v.set(e.pageX-mouse.r.x, e.pageY-mouse.r.y);
+	mouse.r.set(e.pageX, e.pageY);
+
+	// Drag if dragging
+	if (figur.dragged) {
+		// Diff of mouse position and figure mouse offset
+		var newpos = Vector.diff(mouse.r, figur.mOff);
+
+		// Flip if exceeds certain limit
+		figur.forceflip(trigger(mouse.v.x, 5));
+
+		// Force coords to set as such
+		$('#figure').css({
+			'top': newpos.y+'px',
+			'left': newpos.x+'px'
+		});
+
+		newpos.y += $(document).scrollTop();
+
+		figur.r.setV(newpos);
+		dbTxt(4, 'DRAG @@ '+newpos.toString()+' X> '+figur.mOff.toString());
+	}
+	dbTxt(1, mouse.r.toString()+' ** '+mouse.v.toString());
+}
+
+document.onmousedown = function(e){
+	if (inBounds(figur,e.pageX,e.pageY)) {
+		dbTxt(4, "ON");
+		clearTimeout(queueEvent);
+		figur.mouseDown(e.pageX, e.pageY);
+	}
+	else
+		dbTxt(4, "OFF");
+}
+
+document.onmouseup = function(e){
+	dbTxt(4, "OFF");
+	figur.mouseUp();
 }
