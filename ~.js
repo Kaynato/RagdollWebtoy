@@ -243,13 +243,15 @@ var figur = {
 	elem: new cssdiv("#figure"),
 
 	initialize: function() {
+
 		if (window.fstack == undefined)
 			window.fstack = [this];
 		else
 			window.fstack.push(this);
+
 		this.elem = new cssdiv("#figure");
 		this.elem.setTop(0);
-		this.r = new vec2(this.elem.getLeft(), this.elem.getTop());
+		this.r = new vec2(this.elem.getLeft(), this.elem.getTop()+$(document).scrollTop());
 		this.state = this.ff.idle;
 	},
 
@@ -783,7 +785,7 @@ var figur = {
 		this.v.y = 0;
 		this.r.y = h;
 		return h;
-	}
+	},
 
 	hidden: false,
 	hidetoggle: function() {
