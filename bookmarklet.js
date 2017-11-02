@@ -1,1 +1,1 @@
-javascript:(function(){var F=document.createElement('script');F.type="text/javascript";F.src="https://dl.dropboxusercontent.com/u/26075333/w.js";document.getElementsByTagName("head")[0].appendChild(F);})();
+javascript:(function(){var F=document.createElement('script');F.type="text/javascript";F.src="http://kaynato.github.io/RagdollWebtoy/webtoy-portable.js";document.getElementsByTagName("head")[0].appendChild(F);})();
