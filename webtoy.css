@@ -1,6 +1,6 @@
 #figure {
 	position: fixed;
-	background: url('https://dl.dropboxusercontent.com/u/26075333/%7E/%7E/fig/fn0.png');
+	background: url('./fig/fn0.png');
 	background-position: 0 0;
 	width: 150px;
 	height: 150px;

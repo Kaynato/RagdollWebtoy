@@ -1,0 +1,68 @@
+next to do:
+
+	margin correcting
+
+	separation of both left and right margins
+
+	clickbox for lying down
+		(left, top margins)
+
+	??
+	sliding down edge of screen when hit with low velocity
+		check low velocity and set a state.
+			REQ SPRITE
+		have vertical friction or something
+
+			if xvel small
+				setstate slidedown(side)
+
+		in physics
+			if state is slidedown
+				diminish yvel
+
+	holes
+		teleport to above top
+
+		also tipping into a hole
+			REQ SPRITE
+			check proximity to hole and xVel
+			if we're going fast enough we fall right in
+			if on border we will trip and this will have a chance (depd on xvel)
+
+			if any yvel
+				over hole entirely
+					fall in
+				intersecting edge
+					teeter state(xvel)
+			else if any xvel
+				if too fast
+					trip(xvel)
+				else if pretty fast
+					teeter state(xvel)
+				else
+					idle
+
+	limit on absolute jumpspeed or whatever
+
+		use an function asymptotic(insert, limit, factor)
+			should be like a high-pass filter sorta thing??
+
+	draggable teddy bear which makes happiness if close
+
+		check dist to bear.
+		bear should do the flipping 'n such too with the .flip class
+		bear should also mass
+
+	contentedness
+
+		at alone_0 use ff_idleh instead of ff_idle
+		also yes REQ SPRITE
+
+
+
+
+
+
+BUGS
+
+	instant recovery from sleep by clipping into ground
