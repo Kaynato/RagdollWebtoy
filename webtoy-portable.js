@@ -15,7 +15,7 @@ function load(N, T){
 		document.getElementsByTagName("head")[0].appendChild(F);
 }
 load("https://code.jquery.com/jquery-2.2.3.min.js", "js");
-load("http://kaynato.github.io/RagdollWebtoy/webtoy.css", "css");
+load("https://kaynato.github.io/RagdollWebtoy/webtoy.css", "css");
 function create(){
 	var F = document.createElement('div');
 	F.setAttribute("id", "figure");
@@ -30,7 +30,7 @@ function wait(){
 		window.setTimeout(wait,100); 
 	else {
 		create();
-		load("http://kaynato.github.io/RagdollWebtoy/webtoy-mini.js", "js");
+		load("https://kaynato.github.io/RagdollWebtoy/webtoy-mini.js", "js");
 	} 
 }
 wait();
