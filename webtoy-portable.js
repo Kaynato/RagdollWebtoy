@@ -30,7 +30,7 @@ function wait(){
 		window.setTimeout(wait,100); 
 	else {
 		create();
-		load("https://kaynato.github.io/RagdollWebtoy/webtoy-mini.js", "js");
+		load("https://kaynato.github.io/RagdollWebtoy/~.js", "js");
 	} 
 }
 wait();
